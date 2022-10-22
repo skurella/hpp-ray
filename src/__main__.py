@@ -22,9 +22,10 @@ def cli():
 @click.argument("targets", nargs=-1)
 def gather_deps(ninja_binary, num_files, build_dir, targets):
     '''
-    Process `build.ninja` and `compile_commands.json`.
-    Amend the compile commands to make the compiler produce dependency lists.
-    Process those lists to create a mapping from files to compile targets.
+    Extracts build dependencies between files.
+    Processes `build.ninja` and `compile_commands.json`.
+    Amends the compile commands to make the compiler produce dependency lists.
+    Processes those lists to create a mapping from files to compile targets.
     '''
     ninja_binary = realpath(ninja_binary) if ninja_binary else "ninja"
     if not targets:
