@@ -85,7 +85,7 @@ def get_ninja_target_inputs(ninja_binary: str, ninja_build_dir: str, targets: Li
 @click.option("--num-files", "-n", help="top N loudest headers", type=int, default=10)
 @click.argument("build-dir")
 @click.argument("targets", nargs=-1)
-def analyze_deps(ninja_binary, num_files, build_dir: str, targets: List[str]):
+def gather_deps(ninja_binary, num_files, build_dir: str, targets: List[str]):
     with open(Path(build_dir).joinpath("compile_commands.json")) as f:
         compile_commands = json.load(f)
 
@@ -121,7 +121,7 @@ def cli():
     pass
 
 
-cli.add_command(analyze_deps)
+cli.add_command(gather_deps)
 
 if __name__ == "__main__":
     cli()

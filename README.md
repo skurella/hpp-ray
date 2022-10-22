@@ -40,7 +40,7 @@ cmake .. -G Ninja
 ## Run `hpp-ray`
 
 ```sh
-hpp-ray analyze-deps ~/project/build tests
+hpp-ray gather-deps ~/project/build tests
 ```
 
 This analyzes which headers cause the most recompilations when touched.
