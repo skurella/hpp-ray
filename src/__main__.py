@@ -5,8 +5,9 @@ import click
 from dataclasses import dataclass
 import json
 import logging
+from os.path import realpath
 from threading import Lock
-import pathlib
+from pathlib import Path
 import subprocess
 from tqdm.contrib.concurrent import thread_map
 
@@ -63,27 +64,28 @@ class DependencyMap:
             return sorted(self._map.items(), key=lambda item: -len(item[1]))
 
 
-def get_ninja_target_inputs(ninja_build_dir: str, targets: List[str]):
-    ninja_bin_path = pathlib.Path(__file__).parent.joinpath('ninja')
-    logging.debug(
-        f"Calling {ninja_bin_path} to fetch inputs for {', '.join(targets)}")
-    cmd = [ninja_bin_path, "-t", "inputs", *targets]
-    return subprocess.check_output(cmd, cwd=ninja_build_dir).decode("utf-8").splitlines()
+def get_ninja_target_inputs(ninja_binary: str, ninja_build_dir: str, targets: List[str]):
+    logging.debug(f"Calling {ninja_binary} to fetch inputs for "
+                  f"{', '.join(targets)} from {ninja_build_dir}")
+    cmd = [ninja_binary, "-C", ninja_build_dir, "-t", "inputs", *targets]
+    return subprocess.check_output(cmd).decode("utf-8").splitlines()
 
 
 @click.command()
-@click.option("--num_files", "-n", help="top N loudest headers", type=int, default=10)
+@click.option("--ninja-binary", "-b", type=str, default="ninja")
+@click.option("--num-files", "-n", help="top N loudest headers", type=int, default=10)
 @click.argument("build-dir")
 @click.argument("targets", nargs=-1)
-def analyze_deps(num_files, build_dir: str, targets: List[str]):
-    with open(pathlib.Path(build_dir).joinpath("compile_commands.json")) as f:
+def analyze_deps(ninja_binary, num_files, build_dir: str, targets: List[str]):
+    with open(Path(build_dir).joinpath("compile_commands.json")) as f:
         compile_commands = json.load(f)
 
     logging.info(f"Found {len(compile_commands)} compile commands")
     for cmd in compile_commands:
         logging.debug(cmd["file"])
 
-    target_inputs = get_ninja_target_inputs(build_dir, targets)
+    target_inputs = get_ninja_target_inputs(
+        realpath(ninja_binary), build_dir, targets)
     logging.info(
         f"Found {len(target_inputs)} inputs required to build {', '.join(targets)}")
     for target in targets:
