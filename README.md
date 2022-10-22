@@ -1,6 +1,6 @@
-Currently, hpp-ray analyzes the number of C/C++ translation units affected by touching a header file.
+`hpp-ray` analyzes the number of C/C++ translation units affected by touching a header file and cross-verifies it with the git history.
 
-The overall aim for this tool is to aid in compile time optimization by estimating the long-term impact of changes on individual header files.
+The overall aim for this tool is to aid in compile time optimization by estimating the impact of individual header file changes over the long term.
 
 # Requirements
 
@@ -40,14 +40,15 @@ cmake .. -G Ninja
 ## Run `hpp-ray`
 
 ```sh
-hpp-ray gather-deps ~/project/build tests
+hpp-ray gather-deps -c 100 ~/project/build tests
 ```
 
-This analyzes which headers cause the most recompilations when touched.
+This analyzes which headers caused the most recompilations within the last 100 commits.
 
 # Does it solve a different problem than `include-what-you-use`?
 
 Yes. Consider a config structure with getter and setter methods used by 1k translation units.
+Every change to the config results in 1k files being recompiled.
 IWYU will not optimize this, as you need a full definition of a structure to invoke a method on it.
 
 However, it *is* possible to optimize this - e.g. by using external getter wrappers, and then declaring them locally.
@@ -60,13 +61,6 @@ pip install --editable .
 ```
 
 ## Things I want to add
-
-### Git cross-check
-
-OK, cool, this header causes 10k files to recompile, but maybe it was last touched 3 years ago?
-
-I want to run some analysis on the repo to work out what the actual impact is of a header file on the day-to-day work of the developers.
-The impact score would be amended by how many times the file was modified in a given timeframe.
 
 ### Compile time profiling
 
