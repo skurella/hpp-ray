@@ -1,3 +1,5 @@
+#!/bin/python3
+
 from typing import Any, Callable, List, Mapping, Tuple
 import click
 from dataclasses import dataclass
@@ -8,7 +10,7 @@ import pathlib
 import subprocess
 from tqdm.contrib.concurrent import thread_map
 
-logging.basicConfig(format="%(levelname)-10s %(message)s", level=logging.INFO)
+logging.basicConfig(format="%(module)-12s %(levelname)-8s %(message)s", level=logging.INFO)
 
 
 @dataclass
@@ -103,5 +105,13 @@ def analyze_deps(num_files, build_dir: str, targets: List[str]):
         logging.info(f"{k} contributes to {len(v)} targets")
 
 
-if __name__ == '__main__':
-    analyze_deps()
+
+@click.group()
+def cli():
+    pass
+
+
+cli.add_command(analyze_deps)
+
+if __name__ == "__main__":
+    cli()

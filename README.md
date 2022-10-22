@@ -1,10 +1,8 @@
-# hpp-ray
-
 Currently, hpp-ray analyzes the number of C/C++ translation units affected by touching a header file.
 
 The overall aim for this tool is to aid in compile time optimization by estimating the long-term impact of changes on individual header files.
 
-## Requirements
+# Requirements
 
 Your system needs to have Ninja 1.11 or later.
 Given that it's not yet available via `apt` or `pip`, the implementation is assuming the binary's in the root directory of `hpp-ray`.
@@ -12,28 +10,54 @@ Given that it's not yet available via `apt` or `pip`, the implementation is assu
 The project under analysis needs to be configured with CMake and Ninja.
 The build folder must contain files `compile_commands.json` and `build.ninja`.
 
-## Getting started
+# Getting started
 
-TODO: add `setup.py`
+## Install with `pip`
 
-1. Install `click` and `tqdm`.
+```bash
+pip install git+https://github.com/skurella/hpp-ray.git
+```
 
-2. Configure the application you'd like to analyze. Set Ninja as your generator.
+### Shell completion
+
+Add the following to your `.bashrc`:
+
+```bash
+eval "$(_HPP_RAY_COMPLETE=bash_source hpp-ray)"
+```
+
+For other shells, refer to the [click documentation](https://click.palletsprojects.com/en/8.1.x/shell-completion/).
+
+## Configure the aplication you want to analyze
+
+Configure CMake, setting Ninja as your generator.
+
 ```sh
 mkdir build && cd build
 cmake .. -G Ninja
 ```
 
-3. Run `python hpp-ray.py ~/project/build tests`.
+## Run `hpp-ray`
+
+```sh
+hpp-ray analyze-deps ~/project/build tests
+```
+
 This analyzes which headers cause the most recompilations when touched.
 
-## Does it solve a different problem than `include-what-you-use`?
+# Does it solve a different problem than `include-what-you-use`?
 
 Yes. Consider a config structure with getter and setter methods used by 1k translation units.
 IWYU will not optimize this, as you need a full definition of a structure to invoke a method on it.
 
 However, it *is* possible to optimize this - e.g. by using external getter wrappers, and then declaring them locally.
 `hpp-ray` will simply help you decide if it's worth the effort.
+
+# Development
+
+```sh
+pip install --editable .
+```
 
 ## Things I want to add
 
