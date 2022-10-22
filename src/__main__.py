@@ -7,6 +7,7 @@ import json
 import logging
 from os.path import realpath
 from threading import Lock
+from packaging import version
 from pathlib import Path
 import subprocess
 from tqdm.contrib.concurrent import thread_map
@@ -73,7 +74,13 @@ class DependencyMap:
             return sorted(self._map.items(), key=lambda item: -len(item[1]))
 
 
+def verify_ninja_version(ninja_binary: str):
+    version_str = subprocess.check_output([ninja_binary, "--version"]).decode("utf-8")
+    assert version.parse(version_str) >= version.parse("1.11.0")
+
+
 def get_ninja_target_inputs(ninja_binary: str, ninja_build_dir: str, targets: List[str]):
+    verify_ninja_version(ninja_binary)
     logging.debug(f"Calling {ninja_binary} to fetch inputs for "
                   f"{', '.join(targets)} from {ninja_build_dir}")
     cmd = [ninja_binary, "-C", ninja_build_dir, "-t", "inputs", *targets]
@@ -81,7 +88,7 @@ def get_ninja_target_inputs(ninja_binary: str, ninja_build_dir: str, targets: Li
 
 
 @click.command()
-@click.option("--ninja-binary", "-b", type=str, default="ninja")
+@click.option("--ninja-binary", "-b", type=str, default=None)
 @click.option("--num-files", "-n", help="top N loudest headers", type=int, default=10)
 @click.argument("build-dir")
 @click.argument("targets", nargs=-1)
@@ -93,24 +100,27 @@ def gather_deps(ninja_binary, num_files, build_dir: str, targets: List[str]):
     for cmd in compile_commands:
         logging.debug(cmd["file"])
 
-    target_inputs = get_ninja_target_inputs(
-        realpath(ninja_binary), build_dir, targets)
+    ninja_binary = realpath(ninja_binary) if ninja_binary else "ninja"
+    if not targets:
+        logging.warn("No targets were specified, assuming `all`.")
+        targets = ["all"]
+    target_inputs = get_ninja_target_inputs(ninja_binary, build_dir, targets)
     logging.info(
         f"Found {len(target_inputs)} inputs required to build {', '.join(targets)}")
     for target in targets:
         logging.debug(target)
 
-    relevant_compile_commands = [
+    target_compile_commands = [
         cmd for cmd in compile_commands if cmd["file"] in target_inputs]
-    logging.info(f"{len(relevant_compile_commands)} of the {len(compile_commands)} "
+    logging.info(f"{len(target_compile_commands)} of the {len(compile_commands)} "
                  "compile commands are required to build the requested targets.")
-    for cmd in relevant_compile_commands:
+    for cmd in target_compile_commands:
         logging.debug(cmd["file"])
 
     mapping = DependencyMap()
 
     thread_map(lambda cmd: extract_deps(
-        cmd, mapping.process), relevant_compile_commands)
+        cmd, mapping.process), target_compile_commands)
 
     for [k, v] in mapping.sorted_items()[:num_files]:
         logging.info(f"{k} contributes to {len(v)} targets")
