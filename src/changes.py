@@ -1,6 +1,8 @@
+from itertools import count
 import logging
 import pygit2
 from os.path import join
+from tqdm import trange
 
 from .data import ChangeMap
 
@@ -13,14 +15,15 @@ def gather_changes(dir: str, max_commits=None) -> ChangeMap:
     repo = pygit2.Repository(dir)
     head = repo.head
     assert head
-    logging.info(f"Gathering changes from {head.shorthand}")
+    logging.info("Gathering changes %son %s",
+                 f"from {max_commits} latest commits " if max_commits else "",
+                 head.shorthand)
     commit = repo[head.target]
     assert isinstance(commit, pygit2.Commit), "HEAD does not point to a commit"
 
     statistics = ChangeMap()
 
-    commits_processed = 0
-    while commits_processed != max_commits:
+    for _ in (trange(max_commits) if max_commits else count()):
         logging.debug(
             f"Processing {commit.short_id} {commit.message.splitlines()[0]}")
         if not commit.parents:
@@ -34,7 +37,6 @@ def gather_changes(dir: str, max_commits=None) -> ChangeMap:
             fullpath = join(repo.workdir, delta.new_file.path)
             statistics.process(fullpath)
 
-        commits_processed += 1
         commit = parent
 
     return statistics
