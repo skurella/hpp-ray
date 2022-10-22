@@ -11,7 +11,8 @@ from pathlib import Path
 import subprocess
 from tqdm.contrib.concurrent import thread_map
 
-logging.basicConfig(format="%(module)-12s %(levelname)-8s %(message)s", level=logging.INFO)
+logging.basicConfig(
+    format="%(levelname)-10s %(message)s", level=logging.INFO)
 
 
 @dataclass
@@ -23,7 +24,15 @@ class CompileTarget:
 
 
 def extract_deps(cmd, process: Callable[[CompileTarget], Any]):
+    '''
+    Extracts a list of targets from a compile command entry.
+    The result is passed to the `process` callback.
+    '''
     def get_deps_raw(command: str, cwd: str) -> str:
+        '''
+        Invokes the compiler with extra flags to yield a list of dependencies.
+        Returns the captured output without any processing.
+        '''
         deps_cmd = command.split(' ') + ["-MM", "-MF", "-"]
         return subprocess.check_output(deps_cmd, cwd=cwd).decode('utf-8')
 
@@ -105,7 +114,6 @@ def analyze_deps(ninja_binary, num_files, build_dir: str, targets: List[str]):
 
     for [k, v] in mapping.sorted_items()[:num_files]:
         logging.info(f"{k} contributes to {len(v)} targets")
-
 
 
 @click.group()
