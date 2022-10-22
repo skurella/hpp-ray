@@ -4,7 +4,7 @@ import click
 import logging
 from os.path import realpath
 
-from . import deps
+from . import changes, deps
 
 logging.basicConfig(
     format="%(levelname)-10s %(message)s", level=logging.INFO)
@@ -35,6 +35,20 @@ def gather_deps(ninja_binary, num_files, build_dir, targets):
 
     for [k, v] in mapping.sorted_items()[:num_files]:
         print(f"{k} contributes to {len(v)} targets")
+
+
+@cli.command()
+@click.option("--max-commits", type=int)
+@click.option("--num-files", help="top N loudest headers", type=int, default=10)
+@click.argument("dir")
+def gather_changes(max_commits, num_files, dir):
+    '''
+    Counts how many times each file has been changed in git.
+    '''
+    statistics = changes.gather_changes(dir, max_commits)
+
+    for [k, v] in statistics.sorted_items()[:num_files]:
+        print(f"{k} was changed {v} times")
 
 
 if __name__ == "__main__":

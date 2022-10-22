@@ -29,3 +29,18 @@ class DependencyMap:
     def sorted_items(self):
         with self._lock:
             return sorted(self._map.items(), key=lambda item: -len(item[1]))
+
+class ChangeMap:
+    '''
+    Stores how many times a file has been modified.
+    '''
+    _map: Mapping[str, int] = {}
+
+    def process(self, path: str):
+        if path in self._map:
+            self._map[path] += 1
+        else:
+            self._map[path] = 1
+
+    def sorted_items(self):
+        return sorted(self._map.items(), key=lambda item: -item[1])
