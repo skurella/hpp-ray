@@ -6,6 +6,7 @@ from packaging import version
 from pathlib import Path
 import subprocess
 from tqdm.contrib.concurrent import thread_map
+import shlex
 
 from .data import CompileTarget, DependencyMap
 
@@ -20,7 +21,7 @@ def extract_deps(cmd, process: Callable[[CompileTarget], Any]):
         Invokes the compiler with extra flags to yield a list of dependencies.
         Returns the captured output without any processing.
         '''
-        deps_cmd = command.split(' ') + ["-MM", "-MF", "-"]
+        deps_cmd = shlex.split(command) + ["-MM", "-MF", "-"]
         return subprocess.check_output(deps_cmd, cwd=cwd).decode('utf-8')
 
     def parse_deps_raw(deps_raw: str) -> Tuple[str, List[str]]:
