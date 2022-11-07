@@ -6,9 +6,10 @@ from packaging import version
 from pathlib import Path
 import subprocess
 from tqdm.contrib.concurrent import thread_map
+import os
+import shlex
 
 from .data import CompileTarget, DependencyMap
-
 
 def extract_deps(cmd, process: Callable[[CompileTarget], Any]):
     '''
@@ -20,7 +21,7 @@ def extract_deps(cmd, process: Callable[[CompileTarget], Any]):
         Invokes the compiler with extra flags to yield a list of dependencies.
         Returns the captured output without any processing.
         '''
-        deps_cmd = command.split(' ') + ["-MM", "-MF", "-"]
+        deps_cmd = shlex.split(command) + ["-MM", "-MF", "-"]
         return subprocess.check_output(deps_cmd, cwd=cwd).decode('utf-8')
 
     def parse_deps_raw(deps_raw: str) -> Tuple[str, List[str]]:
@@ -71,8 +72,12 @@ def gather_deps(ninja_binary: str, build_dir: str, targets: List[str]) -> Depend
     for target in targets:
         logging.debug(target)
 
+    # Convert paths to absolute paths
+    normalize = lambda path: os.path.normpath(os.path.join(build_dir, path))
+    target_inputs_abs = set(normalize(f) for f in target_inputs)
+
     target_compile_commands = [
-        cmd for cmd in compile_commands if cmd["file"] in target_inputs]
+        cmd for cmd in compile_commands if cmd["file"] in target_inputs_abs]
     logging.info(f"{len(target_compile_commands)} of the {len(compile_commands)} "
                  "compile commands are required to build the requested targets.")
     for cmd in target_compile_commands:
